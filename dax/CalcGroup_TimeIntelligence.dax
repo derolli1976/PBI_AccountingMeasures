@@ -1,0 +1,49 @@
+// =============================================================================
+// CalcGroup_TimeIntelligence.dax
+// Calculation Group: "Variance Analysis"
+//
+// Add this as a Calculation Group table in Tabular Editor or the Fabric
+// Semantic Model editor.  Each section below is a separate Calculation Item.
+// The Calculation Group replaces the need for duplicate measures per scenario
+// and works with every measure in the model (SELECTEDMEASURE()).
+//
+// Recommended Ordinal values:
+//   Actual        = 1
+//   Budget        = 2
+//   Prior Year    = 3
+//   Δ vs Budget   = 4
+//   Δ% vs Budget  = 5
+// =============================================================================
+
+// ── Item: Actual ──────────────────────────────────────────────────────────────
+// Returns the selected measure as-is (Actual scenario is already the default
+// filter from the Scenario slicer).
+SELECTEDMEASURE()
+
+// ── Item: Budget ──────────────────────────────────────────────────────────────
+// Overrides the Scenario filter to show the Budget scenario.
+CALCULATE(
+    SELECTEDMEASURE(),
+    Dim_Scenario[ScenarioName] = "Budget"
+)
+
+// ── Item: Prior Year ──────────────────────────────────────────────────────────
+// Shifts the date context back by exactly 12 months.
+// Requires a continuous Date column in Dim_Period for DATEADD to work.
+CALCULATE(
+    SELECTEDMEASURE(),
+    DATEADD(Dim_Period[Date], -1, YEAR)
+)
+
+// ── Item: Δ vs Budget ─────────────────────────────────────────────────────────
+// Absolute variance: Actual minus Budget.
+VAR act = SELECTEDMEASURE()
+VAR bud = CALCULATE(SELECTEDMEASURE(), Dim_Scenario[ScenarioName] = "Budget")
+RETURN act - bud
+
+// ── Item: Δ% vs Budget ────────────────────────────────────────────────────────
+// Relative variance: (Actual - Budget) / |Budget|.
+// ABS(bud) avoids sign inversion when budget is negative.
+VAR act = SELECTEDMEASURE()
+VAR bud = CALCULATE(SELECTEDMEASURE(), Dim_Scenario[ScenarioName] = "Budget")
+RETURN DIVIDE(act - bud, ABS(bud))

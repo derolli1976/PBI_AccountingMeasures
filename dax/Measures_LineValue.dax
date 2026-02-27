@@ -1,0 +1,120 @@
+// =============================================================================
+// Measures_LineValue.dax
+// Generic LineValue measure – the single measure used in the Matrix visual.
+//
+// Logic:
+//   DATA        → summed directly from Fact_ReportLine_Balance via [Amount]
+//   CALCULATED  → derived from other lines via a SWITCH / hardcoded DAX tree
+//   PERCENTAGE  → ratio of a CALCULATED/DATA line to a base line (e.g. Sales)
+//
+// The SWITCH tree mirrors the CalcOperands JSON in Dim_ReportLine so that
+// the report logic is fully documented in data, even though DAX requires
+// explicit CALCULATE calls.
+// =============================================================================
+
+LineValue =
+VAR CurrentLine     = SELECTEDVALUE(Dim_ReportLine[LineItem])
+VAR CurrentLineType = SELECTEDVALUE(Dim_ReportLine[LineType])
+
+// ── DATA lines ────────────────────────────────────────────────────────────────
+// Remove filter on Dim_ReportLine so [Amount] reads only the current line's
+// fact rows (the row context from the Matrix visual already filters by LineItem).
+VAR DataValue =
+    IF(
+        CurrentLineType = "DATA",
+        CALCULATE(
+            [Amount],
+            REMOVEFILTERS(Dim_ReportLine)
+        )
+    )
+
+// ── CALCULATED lines ──────────────────────────────────────────────────────────
+// Each branch explicitly sums its operands so Power BI can resolve all
+// filter contexts correctly.  Internal helper measures (_EBIT_internal,
+// _EBT_internal) are used to avoid repeating long expressions.
+VAR CalcValue =
+    SWITCH(
+        CurrentLine,
+
+        // Gross Profit = Sales + Cost of Sales
+        "Gross Profit",
+            CALCULATE([Amount], Dim_ReportLine[LineItem] = "Sales")
+          + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Cost of Sales"),
+
+        // SGA = Selling + G&A + R&D
+        "SGA",
+            CALCULATE([Amount], Dim_ReportLine[LineItem] = "Selling Expenses")
+          + CALCULATE([Amount], Dim_ReportLine[LineItem] = "General and Administration Exp.")
+          + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Research and Development"),
+
+        // EBIT = Gross Profit + SGA + Other Operating items
+        "EBIT",
+            ( CALCULATE([Amount], Dim_ReportLine[LineItem] = "Sales")
+            + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Cost of Sales") )
+          + ( CALCULATE([Amount], Dim_ReportLine[LineItem] = "Selling Expenses")
+            + CALCULATE([Amount], Dim_ReportLine[LineItem] = "General and Administration Exp.")
+            + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Research and Development") )
+          + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Other Operating Income")
+          + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Other Operating Expenses"),
+
+        // D&A – DATA line referenced in EBITDA; branch returns its DATA value
+        "D&A",
+            CALCULATE([Amount], Dim_ReportLine[LineItem] = "D&A"),
+
+        // EBITDA = EBIT + D&A
+        "EBITDA",
+            [_EBIT_internal]
+          + CALCULATE([Amount], Dim_ReportLine[LineItem] = "D&A"),
+
+        // Financial Result = Result from Investments + Interest Result
+        "Financial Result",
+            CALCULATE([Amount], Dim_ReportLine[LineItem] = "Result from Investments")
+          + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Interest Result"),
+
+        // EBT = EBIT + Financial Result
+        "EBT",
+            [_EBIT_internal]
+          + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Result from Investments")
+          + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Interest Result"),
+
+        // Net Income = EBT + Tax
+        "Net Income",
+            [_EBT_internal]
+          + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Tax"),
+
+        BLANK()
+    )
+
+// ── PERCENTAGE lines ──────────────────────────────────────────────────────────
+// Each % line divides its reference value by Sales.
+// DIVIDE handles division by zero gracefully (returns BLANK).
+VAR SalesValue =
+    CALCULATE([Amount], Dim_ReportLine[LineItem] = "Sales")
+
+VAR PctReferenceValue =
+    SWITCH(
+        CurrentLine,
+        "GP %",     CALCULATE([LineValue], Dim_ReportLine[LineItem] = "Gross Profit"),
+        "SGA %",    CALCULATE([LineValue], Dim_ReportLine[LineItem] = "SGA"),
+        "EBITDA %", CALCULATE([LineValue], Dim_ReportLine[LineItem] = "EBITDA"),
+        "EBIT %",   CALCULATE([LineValue], Dim_ReportLine[LineItem] = "EBIT"),
+        "EBT %",    CALCULATE([LineValue], Dim_ReportLine[LineItem] = "EBT"),
+        "Tax %",    CALCULATE([LineValue], Dim_ReportLine[LineItem] = "Tax"),
+        BLANK()
+    )
+
+VAR PctValue =
+    IF(
+        CurrentLineType = "PERCENTAGE" && NOT ISBLANK(SalesValue) && SalesValue <> 0,
+        DIVIDE(PctReferenceValue, SalesValue)
+    )
+
+// ── Return ────────────────────────────────────────────────────────────────────
+RETURN
+    SWITCH(
+        CurrentLineType,
+        "DATA",         DataValue,
+        "CALCULATED",   CalcValue,
+        "PERCENTAGE",   PctValue,
+        BLANK()
+    )

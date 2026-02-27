@@ -1,0 +1,11 @@
+// =============================================================================
+// Measures_Base.dax
+// Base measure: sums the pre-aggregated amount from Fact_ReportLine_Balance.
+// All other measures build on top of [Amount].
+// =============================================================================
+
+Amount =
+SUMX(
+    Fact_ReportLine_Balance,
+    Fact_ReportLine_Balance[Amount]
+)
