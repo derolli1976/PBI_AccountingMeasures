@@ -316,3 +316,39 @@ Vollständiges Mockup und Setup-Details → [`docs/visual-setup.md`](docs/visual
 | `dax/` | `CalcGroup_TimeIntelligence.dax` | Calculation Group: Actual / Budget / PY / Δ / Δ% |
 | `docs/` | `architecture.md` | Detaillierte Architektur-Dokumentation |
 | `docs/` | `visual-setup.md` | Power BI Visual Setup Guide |
+| `sql/sample-data/` | `00_Schema_All_Tables.sql` | DDL Demo-Datenbank (alle Tabellen) |
+| `sql/sample-data/` | `01–05_Seed_*.sql` | Demo-Seed-Daten (Dimensionen + Fakten) |
+| `sql/sample-data/` | `06_Map_Account_ReportLine_BS.sql` | BS-Kontomappings |
+| `duckdb/` | `setup_duckdb.py` | DuckDB-Datenbank erstellen (lokale Demo) |
+| `duckdb/` | `export_to_parquet.py` | Tabellen als Parquet-Dateien exportieren |
+| `duckdb/` | `validate_model.py` | Datenmodell-Validierung |
+| `duckdb/` | `requirements.txt` | Python-Abhängigkeiten für DuckDB-Scripts |
+| `duckdb/` | `README.md` | Anleitung für die lokale DuckDB-Demo |
+
+---
+
+## 🚀 Quick Start: Lokale Demo
+
+### Voraussetzungen
+- Python 3.9+
+- Power BI Desktop
+
+### Setup
+```bash
+# 1. Repository klonen
+git clone https://github.com/derolli1976/PBI_AccountingMeasures.git
+cd PBI_AccountingMeasures
+
+# 2. DuckDB-Datenbank erstellen
+cd duckdb
+pip install -r requirements.txt
+python setup_duckdb.py
+
+# 3. Parquet-Dateien für Power BI exportieren
+python export_to_parquet.py
+
+# 4. Power BI Desktop öffnen
+#    → Daten abrufen → Parquet → Ordner duckdb/parquet/ auswählen
+```
+
+Ausführliche Anleitung: [`duckdb/README.md`](duckdb/README.md)

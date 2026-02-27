@@ -1,0 +1,11 @@
+# DuckDB generated files
+*.duckdb
+*.duckdb.wal
+
+# Parquet exports
+duckdb/parquet/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo

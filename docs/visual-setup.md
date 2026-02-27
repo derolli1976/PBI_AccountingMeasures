@@ -195,3 +195,27 @@ Der Filter kann als **Visual-Filter** (nur diese Matrix), als **Seiten-Filter**
 Das `[LineValue]`-Measure und alle anderen DAX-Measures funktionieren ohne
 Änderung für alle `ReportType`-Werte, da die Berichtslogik vollständig in
 `Dim_ReportLine` konfiguriert ist.
+
+## Lokale Demo mit DuckDB
+
+Für eine lokale Demo ohne Fabric/Cloud kannst du DuckDB als Datenquelle verwenden:
+
+1. **DuckDB-Datenbank erstellen:**
+   ```bash
+   cd duckdb
+   pip install -r requirements.txt
+   python setup_duckdb.py
+   ```
+
+2. **Parquet-Export (empfohlen für Power BI Import):**
+   ```bash
+   python export_to_parquet.py
+   ```
+
+3. **Power BI Desktop anbinden:**
+   - Datei → Daten abrufen → Parquet
+   - Ordner `duckdb/parquet/` auswählen
+   - Alle 8 Tabellen importieren
+   - Beziehungen im Modell prüfen/erstellen
+
+Siehe `duckdb/README.md` für Details.
