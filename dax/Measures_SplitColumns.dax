@@ -1,0 +1,28 @@
+// =============================================================================
+// Measures_SplitColumns.dax
+// Optional split measures for Matrix visuals that separate absolute values
+// from percentage values into distinct columns.
+//
+// Usage: Add both measures as Values in the Matrix visual instead of [LineValue].
+// Set format of AbsoluteValue to currency and PercentageValue to percentage.
+// =============================================================================
+
+// ── AbsoluteValue ─────────────────────────────────────────────────────────────
+// Returns the LineValue only for DATA and CALCULATED rows.
+// PERCENTAGE rows return BLANK so the percentage column stays clean.
+AbsoluteValue =
+IF(
+    SELECTEDVALUE(Dim_ReportLine[LineType]) IN { "DATA", "CALCULATED" },
+    [LineValue],
+    BLANK()
+)
+
+// ── PercentageValue ───────────────────────────────────────────────────────────
+// Returns the LineValue only for PERCENTAGE rows.
+// DATA and CALCULATED rows return BLANK so the absolute column stays clean.
+PercentageValue =
+IF(
+    SELECTEDVALUE(Dim_ReportLine[LineType]) = "PERCENTAGE",
+    [LineValue],
+    BLANK()
+)

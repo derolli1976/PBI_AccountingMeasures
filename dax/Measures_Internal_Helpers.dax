@@ -1,0 +1,23 @@
+// =============================================================================
+// Measures_Internal_Helpers.dax
+// Hidden helper measures used by LineValue to avoid circular dependencies.
+// Prefix _ signals that these measures are not meant for direct use in visuals.
+// =============================================================================
+
+// ── _EBIT_internal ────────────────────────────────────────────────────────────
+// Reusable EBIT calculation referenced by EBITDA and EBT branches in LineValue.
+_EBIT_internal =
+    CALCULATE([Amount], Dim_ReportLine[LineItem] = "Sales")
+  + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Cost of Sales")
+  + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Selling Expenses")
+  + CALCULATE([Amount], Dim_ReportLine[LineItem] = "General and Administration Exp.")
+  + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Research and Development")
+  + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Other Operating Income")
+  + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Other Operating Expenses")
+
+// ── _EBT_internal ─────────────────────────────────────────────────────────────
+// Reusable EBT calculation = EBIT + Financial Result.
+_EBT_internal =
+    [_EBIT_internal]
+  + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Result from Investments")
+  + CALCULATE([Amount], Dim_ReportLine[LineItem] = "Interest Result")

@@ -1,0 +1,30 @@
+// =============================================================================
+// Measures_Margin_Pct.dax
+// Inline margin % measure – used as a second value column in the Matrix visual
+// to show the margin % alongside absolute values on the same row.
+//
+// Only returns a value for key P&L subtotal lines.
+// All other rows return BLANK so the column does not clutter detail lines.
+// =============================================================================
+
+// ── Margin % ──────────────────────────────────────────────────────────────────
+Margin % =
+VAR CurrentLine  = SELECTEDVALUE(Dim_ReportLine[LineItem])
+VAR SalesVal     = CALCULATE([Amount], Dim_ReportLine[LineItem] = "Sales")
+VAR CurrentValue = [LineValue]
+RETURN
+    IF(
+        CurrentLine IN {
+            "Gross Profit",
+            "SGA",
+            "EBITDA",
+            "EBIT",
+            "EBT",
+            "Tax",
+            "Net Income"
+        }
+        && NOT ISBLANK(SalesVal)
+        && SalesVal <> 0,
+        DIVIDE(CurrentValue, SalesVal),
+        BLANK()
+    )
