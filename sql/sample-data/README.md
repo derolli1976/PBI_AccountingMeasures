@@ -49,7 +49,7 @@ conglomerate with subsidiaries in Germany, North America and Asia-Pacific.
 | 3           | FC   | Forecast (-2% rev / +1% costs vs ACT) |
 | 4           | PY   | Prior Year (≈ ACT -7% rev / -5% costs) |
 
-2025 ACT is 2024 ACT + 6% revenue growth, 4% cost increase.
+2025 ACT = 2024 ACT × 1.06 (revenue, +6% growth) and × 1.04 (costs, +4% increase).
 
 ---
 

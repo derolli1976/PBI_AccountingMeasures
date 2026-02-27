@@ -44,9 +44,10 @@ def period_year(pk):
 # Monthly seasonality factors (sum = 1.00)
 # ---------------------------------------------------------------------------
 MONTHLY_FACTORS = [0.06, 0.07, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.09, 0.09, 0.09, 0.12]
-if abs(sum(MONTHLY_FACTORS) - 1.0) >= 1e-9:
+_monthly_factors_sum = sum(MONTHLY_FACTORS)
+if abs(_monthly_factors_sum - 1.0) >= 1e-9:
     raise ValueError(
-        f"MONTHLY_FACTORS must sum to 1.0, got {sum(MONTHLY_FACTORS):.4f}"
+        f"MONTHLY_FACTORS must sum to 1.0, got {_monthly_factors_sum:.4f}"
     )
 
 # ---------------------------------------------------------------------------
@@ -180,8 +181,8 @@ BS_CREDIT_ACCOUNTS = {3600, 3610, 3700, 3710, 3000, 3010, 3100, 3110,
                       3300, 3310, 3400, 3410, 3500, 3510}
 
 
-def noise(pct=0.03):
-    """Return a random multiplier within ±pct of 1.0."""
+def jitter_factor(pct=0.03):
+    """Return a random multiplier within ±pct of 1.0 (e.g. 0.97–1.03)."""
     return 1.0 + random.uniform(-pct, pct)
 
 
@@ -210,7 +211,7 @@ def annual_pl_gl(account_key, scenario_key, year, entity_scale, entity_fx):
         else:
             mult = (rev_m24 * rev_g) if is_revenue else (cost_m24 * cost_g)
 
-    annual_display = base * mult * entity_scale * noise(0.03)
+    annual_display = base * mult * entity_scale * jitter_factor(0.03)
     # Convert display → GL storage (sign_conv is already -1 or 1)
     gl_annual = annual_display * sign_conv
     return gl_annual
@@ -228,7 +229,7 @@ def monthly_pl_rows(entity_key, scenario_key):
             periods = PERIODS_2024 if year == 2024 else PERIODS_2025
             for pk in periods:
                 m = period_month(pk) - 1  # 0-based index
-                monthly_gl = gl_annual * MONTHLY_FACTORS[m] * noise(0.02)
+                monthly_gl = gl_annual * MONTHLY_FACTORS[m] * jitter_factor(0.02)
                 amount_eur = round(monthly_gl, 2)
                 amount_lc  = round(monthly_gl / fx, 2) if fx != 1.0 else amount_eur
                 yield (entity_key, scenario_key, account_key, pk, amount_eur, amount_lc)
@@ -252,7 +253,7 @@ def bs_balance(account_key, scenario_key, period_key, entity_scale, entity_fx,
         amount_eur = round(cumulative_pl_eur * scenario_adj, 2)
     else:
         # Mild monthly drift ±2%
-        amount_eur = round(base * entity_scale * scenario_adj * year_adj * noise(0.02), 2)
+        amount_eur = round(base * entity_scale * scenario_adj * year_adj * jitter_factor(0.02), 2)
 
     amount_lc = round(amount_eur / entity_fx, 2) if entity_fx != 1.0 else amount_eur
     return amount_eur, amount_lc
